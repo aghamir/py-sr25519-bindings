@@ -17,7 +17,7 @@
 import unittest
 
 import bip39
-import sr25519
+import sr25519_nbx
 
 
 class MyTestCase(unittest.TestCase):
@@ -28,29 +28,29 @@ class MyTestCase(unittest.TestCase):
 
     def test_sign_and_verify_message(self):
         # Get private and public key from seed
-        public_key, private_key = sr25519.pair_from_seed(bytes(self.seed))
+        public_key, private_key = sr25519_nbx.pair_from_seed(bytes(self.seed))
 
         # Generate signature
-        signature = sr25519.sign(
+        signature = sr25519_nbx.sign(
             (public_key, private_key),
             self.message
         )
 
         # Verify message with signature
-        self.assertTrue(sr25519.verify(signature, self.message, public_key))
+        self.assertTrue(sr25519_nbx.verify(signature, self.message, public_key))
 
     def test_derive_soft(self):
         # Get private and public key from seed
-        public_key, private_key = sr25519.pair_from_seed(bytes(self.seed))
+        public_key, private_key = sr25519_nbx.pair_from_seed(bytes(self.seed))
 
         # Private derivation
-        child_chain_priv, child_pubkey_priv, child_privkey = sr25519.derive_keypair(
+        child_chain_priv, child_pubkey_priv, child_privkey = sr25519_nbx.derive_keypair(
             (self.chain_code, public_key, private_key),
             self.child_index
         )
 
         # Public derivation
-        child_chain_pub, child_pubkey_pub = sr25519.derive_pubkey(
+        child_chain_pub, child_pubkey_pub = sr25519_nbx.derive_pubkey(
             (self.chain_code, public_key),
             self.child_index
         )
@@ -61,30 +61,30 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(child_pubkey_priv, child_pubkey_pub)
 
         # Test that signatures with the derived private key are valid
-        signature = sr25519.sign(
+        signature = sr25519_nbx.sign(
             (child_pubkey_priv, child_privkey),
             self.message
         )
 
-        self.assertTrue(sr25519.verify(signature, self.message, child_pubkey_pub))
+        self.assertTrue(sr25519_nbx.verify(signature, self.message, child_pubkey_pub))
 
     def test_derive_hard(self):
         # Get private and public key from seed
-        public_key, private_key = sr25519.pair_from_seed(bytes(self.seed))
+        public_key, private_key = sr25519_nbx.pair_from_seed(bytes(self.seed))
 
         # Private derivation
-        _, child_pubkey, child_privkey = sr25519.hard_derive_keypair(
+        _, child_pubkey, child_privkey = sr25519_nbx.hard_derive_keypair(
             (self.chain_code, public_key, private_key),
             self.child_index
         )
 
         # Test that signatures with the derived private key are valid
-        signature = sr25519.sign(
+        signature = sr25519_nbx.sign(
             (child_pubkey, child_privkey),
             self.message
         )
 
-        self.assertTrue(sr25519.verify(signature, self.message, child_pubkey))
+        self.assertTrue(sr25519_nbx.verify(signature, self.message, child_pubkey))
 
 
 if __name__ == '__main__':
