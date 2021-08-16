@@ -12,6 +12,11 @@ edition = "2018"
 [dependencies]
 schnorrkel = "0.10.1"
 
+[dependencies.curve25519-dalek]
+package = "curve25519-dalek-ng"
+# git = "https://github.com/dalek-cryptography/curve25519-dalek"
+version = "4.0"
+
 [dev-dependencies]
 hex-literal = "0.3.3"
 

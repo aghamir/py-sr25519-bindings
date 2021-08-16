@@ -16,7 +16,7 @@
 
 //! Python bindings for the schnorrkel library.
 //!
-//! py-sr25519-bindings provides bindings to the Rust create
+//! complete-sr25519 provides bindings to the Rust create
 //! [schnorrkel](https://crates.io/crates/schnorrkel), allowing for some limited
 //! use and management of sr25519 elliptic keys.
 
@@ -24,7 +24,10 @@ use pyo3::exceptions;
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyBytes, PyTuple};
 use pyo3::{wrap_pyfunction, FromPyObject, IntoPy, PyObject};
-use schnorrkel::context::signing_context;
+
+use curve25519_dalek::scalar::Scalar;
+
+use schnorrkel::context::{signing_context, SigningTranscript};
 use schnorrkel::keys::{ExpansionMode, MiniSecretKey, PublicKey, SecretKey, Keypair as SchnorrkelKeypair};
 use schnorrkel::sign::Signature;
 use schnorrkel::derive::{Derivation, ChainCode};
@@ -252,12 +255,133 @@ pub fn hard_derive_keypair(extended_keypair: ExtendedKeypair, id: Message) -> Py
     Ok(ExtendedKeypair(new_chaincode.0, new_keypair.public.to_bytes(), new_keypair.secret.to_bytes()))
 }
 
+/// aggregate two public points (public_keys or R values.)
+///
+/// # Arguments
+///
+/// * `pubkey1` - The sr25519 public point, as an array of 32 bytes, to use.
+/// * `pubkey2` - The sr25519 public point, as an array of 32 bytes, to use.
+///
+/// # Returns
+///
+/// * `pubkey` - The sr25519 public point, as an array of 32 bytes, to use.
+///
+///
+///
+#[pyfunction]
+#[text_signature = "(public1, public2)"]
+pub fn sum_public_points(pubkey1: PubKey, pubkey2: PubKey) -> PyResult<PubKey> {
+
+    let pk1 = match PublicKey::from_bytes(&pubkey1.0) {
+        Ok(some_pk) => some_pk,
+        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid public key: {}", err.to_string()))),
+    };
+
+    let pk2 = match PublicKey::from_bytes(&pubkey2.0) {
+        Ok(some_pk) => some_pk,
+        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid public key: {}", err.to_string()))),
+    };
+
+    let res_point = pk1.as_point() + pk2.as_point();
+    let result = res_point.compress();
+
+    Ok(PubKey(result.to_bytes()))
+}
+
+/// Multi-Signature: each party must call this function locally. resulting signatures can be
+/// aggregated to construct final signature.
+///
+/// # Arguments
+///
+/// * `keypair` - The sr25519 keypair to sign with, as a tuple of (shared_public_bytes, private_bytes)
+/// * `message` - The binary message to signScala.
+/// * 'R_compressed' - The aggregated public point R = R1 + R2
+/// * 'k' - The random scalar related to local R1/R2
+///
+/// # Returns
+///
+/// A 64-byte signature.
+///
+/// # Raises
+///
+/// * `ValueError` - If either the public or private key is invalid.
+#[pyfunction]
+#[text_signature = "(keypair, message, R, k)"]
+pub fn multi_sign(keypair: Keypair, message: Message, R_compressed: PubKey, k: PrivKey) -> PyResult<Sig> {
+    let mut public = [0u8; PUBLIC_KEY_LENGTH];
+    let mut private = [0u8; SECRET_KEY_LENGTH];
+    public.clone_from_slice(&keypair.0[0..PUBLIC_KEY_LENGTH]);
+    private.clone_from_slice(&keypair.1[0..SECRET_KEY_LENGTH]);
+    let secret = match SecretKey::from_bytes(&private) {
+        Ok(some_secret) => some_secret,
+        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid secret key: {}", err.to_string()))),
+    };
+
+    let k_scalar = match SecretKey::from_bytes(&k.0) {
+        Ok(some_key) => some_key,
+        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid secret key: {}", err.to_string()))),
+    };
+
+    let public = match PublicKey::from_bytes(&public) {
+        Ok(some_public) => some_public,
+        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid public key: {}", err.to_string()))),
+    };
+
+    let R_point = match PublicKey::from_bytes(&R_compressed.0) {
+        Ok(some_pk) => some_pk,
+        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid public key: {}", err.to_string()))),
+    };
+
+    let context = signing_context(SIGNING_CTX);
+    inner_raw_sign(secret, context.bytes(&message.0), R_point, public, k_scalar)
+
+}
+
+pub fn concat_u8(first: &[u8], second: &[u8]) -> Vec<u8> {
+    [first, second].concat()
+}
+
+pub fn inner_raw_sign<T: SigningTranscript>(secret: SecretKey, mut t: T, R_point: PublicKey, public: PublicKey, k: SecretKey) ->  PyResult<Sig>
+{
+    t.proto_name(b"Schnorr-sig");
+    t.commit_point(b"sign:pk",public.as_compressed());
+
+    let R = R_point.as_compressed();
+    t.commit_point(b"sign:R",&R);
+
+    let e = t.challenge_scalar(b"sign:c");  // context, message, A/public_key, R=rG
+
+    let mut num1 = [0u8; 32];
+    let mut num2 = [0u8; 32];
+    let mut num3 = [0u8; 32];
+    num1.clone_from_slice(&e.to_bytes()[0..32]);
+    num2.clone_from_slice(&secret.to_bytes()[0..32]);
+    num3.clone_from_slice(&k.to_bytes()[0..32]);
+    let n1 = Scalar::from_bytes_mod_order(num1);
+
+    let n2 = Scalar::from_bytes_mod_order(num2);
+
+    let n3 = Scalar::from_bytes_mod_order(num3);
+
+    let s = &(&n1 * &n2) + &n3;
+
+    let sbb = concat_u8(&R.as_bytes()[..], &s.as_bytes()[..]);
+    let sb = sbb.as_slice();
+    let sig_byte_arrays = [sb[0], sb[1], sb[2], sb[3], sb[4], sb[5], sb[6], sb[7], sb[8], sb[9],
+                           sb[10], sb[11], sb[12], sb[13], sb[14], sb[15], sb[16], sb[17], sb[18], sb[19],
+                           sb[20], sb[21], sb[22], sb[23], sb[24], sb[25], sb[26], sb[27], sb[28], sb[29],
+                           sb[30], sb[31], sb[32], sb[33], sb[34], sb[35], sb[36], sb[37], sb[38], sb[39],
+                           sb[40], sb[41], sb[42], sb[43], sb[44], sb[45], sb[46], sb[47], sb[48], sb[49],
+                           sb[50], sb[51], sb[52], sb[53], sb[54], sb[55], sb[56], sb[57], sb[58], sb[59],
+                           sb[60], sb[61], sb[62], sb[63]];
+    Ok(Sig(sig_byte_arrays))
+}
+
 // Convert Keypair object to a Python Keypair tuple
 impl IntoPy<PyObject> for Keypair {
     fn into_py(self, py: Python) -> PyObject {
         let secret = PyBytes::new(py, &self.0);
         let public = PyBytes::new(py, &self.1);
-
         PyTuple::new(py, vec![secret, public]).into_py(py)
     }
 }
