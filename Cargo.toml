@@ -1,5 +1,5 @@
 [package]
-name = "sr25519"
+name = "py-sr25519-bindings"
 description = "Python bindings for  full sr25519 library"
 authors=["openAware B.V."]
 version = "0.2.0"
@@ -35,7 +35,7 @@ version = "0.10.1"
 
 [package.metadata.maturin]
 maintainer = "Nobitex"
-maintainer-email = "Hasanizadeh@nobitex.net"
+maintainer-email = "p.hasanizadeh@nobitex.net"
 classifier = [
     "License :: OSI Approved :: Apache Software License",
     "Intended Audience :: Developers",
