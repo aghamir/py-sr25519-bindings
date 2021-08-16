@@ -488,6 +488,8 @@ fn sr25519(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(derive_pubkey))?;
     m.add_wrapped(wrap_pyfunction!(derive_keypair))?;
     m.add_wrapped(wrap_pyfunction!(hard_derive_keypair))?;
+    m.add_wrapped(wrap_pyfunction!(sum_public_points))?;
+    m.add_wrapped(wrap_pyfunction!(multi_sign))?;
 
     Ok(())
 }
