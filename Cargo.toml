@@ -1,10 +1,10 @@
 [package]
-name = "py-sr25519-bindings"
-description = "Python bindings for sr25519 library"
+name = "py-sr25519-bindings-fork"
+description = "Fork Python bindings for sr25519 library"
 authors=["openAware B.V."]
-version = "0.1.3"
-repository = "https://github.com/polkascan/py-sr25519-bindings"
-homepage = "https://github.com/polkascan/py-sr25519-bindings"
+version = "0.2.0"
+repository = "https://github.com/aghamir/py-sr25519-bindings"
+homepage = "https://github.com/aghamir/py-sr25519-bindings"
 license = "Apache-2.0"
 readme = "README.md"
 edition = "2018"
@@ -29,8 +29,8 @@ default = ["extension-module"]
 version = "0.14.2"
 
 [package.metadata.maturin]
-maintainer = "Stichting Polkascan (Polkascan Foundation)"
-maintainer-email = "legal@polkascan.org"
+maintainer = "Mohammad Aghamir"
+maintainer-email = ""
 classifier = [
     "License :: OSI Approved :: Apache Software License",
     "Intended Audience :: Developers",
