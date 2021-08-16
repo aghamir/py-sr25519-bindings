@@ -379,7 +379,7 @@ pub fn inner_raw_sign<T: SigningTranscript>(secret: SecretKey, mut t: T, r_point
     t.commit_point(b"sign:pk",public.as_compressed());
 
     let r_compress = r_point.as_compressed();
-    t.commit_point(b"sign:r_compress",&r_compress);
+    t.commit_point(b"sign:R",&r_compress);
 
     let e = t.challenge_scalar(b"sign:c");  // context, message, A/public_key, R=rG
 
@@ -636,7 +636,7 @@ impl<'a> FromPyObject<'a> for ExtendedKeypair {
 
 /// This module is a python module implemented in Rust.
 #[pymodule]
-fn sr25519(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn sr25519_nbx(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(pair_from_seed))?;
     m.add_wrapped(wrap_pyfunction!(pair_from_ed25519_secret_key))?;
     m.add_wrapped(wrap_pyfunction!(sign))?;
