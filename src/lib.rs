@@ -269,17 +269,17 @@ pub fn hard_derive_keypair(extended_keypair: ExtendedKeypair, id: Message) -> Py
 ///
 ///
 #[pyfunction]
-#[text_signature = "(public1, public2)"]
+#[pyo3(text_signature = "(public1, public2)")]
 pub fn sum_public_points(pubkey1: PubKey, pubkey2: PubKey) -> PyResult<PubKey> {
 
     let pk1 = match PublicKey::from_bytes(&pubkey1.0) {
         Ok(some_pk) => some_pk,
-        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid public key: {}", err.to_string()))),
+        Err(err) => return Err(exceptions::PyValueError::new_err(format!("Invalid public key: {}", err.to_string()))),
     };
 
     let pk2 = match PublicKey::from_bytes(&pubkey2.0) {
         Ok(some_pk) => some_pk,
-        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid public key: {}", err.to_string()))),
+        Err(err) => return Err(exceptions::PyValueError::new_err(format!("Invalid public key: {}", err.to_string()))),
     };
 
     let res_point = pk1.as_point() + pk2.as_point();
@@ -306,34 +306,34 @@ pub fn sum_public_points(pubkey1: PubKey, pubkey2: PubKey) -> PyResult<PubKey> {
 ///
 /// * `ValueError` - If either the public or private key is invalid.
 #[pyfunction]
-#[text_signature = "(keypair, message, R, k)"]
-pub fn multi_sign(keypair: Keypair, message: Message, R_compressed: PubKey, k: PrivKey) -> PyResult<Sig> {
+#[pyo3(text_signature = "(keypair, message, r_compress, k)")]
+pub fn multi_sign(keypair: Keypair, message: Message, r_compress: PubKey, k: PrivKey) -> PyResult<Sig> {
     let mut public = [0u8; PUBLIC_KEY_LENGTH];
     let mut private = [0u8; SECRET_KEY_LENGTH];
     public.clone_from_slice(&keypair.0[0..PUBLIC_KEY_LENGTH]);
     private.clone_from_slice(&keypair.1[0..SECRET_KEY_LENGTH]);
     let secret = match SecretKey::from_bytes(&private) {
         Ok(some_secret) => some_secret,
-        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid secret key: {}", err.to_string()))),
+        Err(err) => return Err(exceptions::PyValueError::new_err(format!("Invalid secret key: {}", err.to_string()))),
     };
 
     let k_scalar = match SecretKey::from_bytes(&k.0) {
         Ok(some_key) => some_key,
-        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid secret key: {}", err.to_string()))),
+        Err(err) => return Err(exceptions::PyValueError::new_err(format!("Invalid secret key: {}", err.to_string()))),
     };
 
     let public = match PublicKey::from_bytes(&public) {
         Ok(some_public) => some_public,
-        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid public key: {}", err.to_string()))),
+        Err(err) => return Err(exceptions::PyValueError::new_err(format!("Invalid public key: {}", err.to_string()))),
     };
 
-    let R_point = match PublicKey::from_bytes(&R_compressed.0) {
+    let r_point = match PublicKey::from_bytes(&r_compress.0) {
         Ok(some_pk) => some_pk,
-        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid public key: {}", err.to_string()))),
+        Err(err) => return Err(exceptions::PyValueError::new_err(format!("Invalid public key: {}", err.to_string()))),
     };
 
     let context = signing_context(SIGNING_CTX);
-    inner_raw_sign(secret, context.bytes(&message.0), R_point, public, k_scalar)
+    inner_raw_sign(secret, context.bytes(&message.0), r_point, public, k_scalar)
 
 }
 
@@ -341,13 +341,13 @@ pub fn concat_u8(first: &[u8], second: &[u8]) -> Vec<u8> {
     [first, second].concat()
 }
 
-pub fn inner_raw_sign<T: SigningTranscript>(secret: SecretKey, mut t: T, R_point: PublicKey, public: PublicKey, k: SecretKey) ->  PyResult<Sig>
+pub fn inner_raw_sign<T: SigningTranscript>(secret: SecretKey, mut t: T, r_point: PublicKey, public: PublicKey, k: SecretKey) ->  PyResult<Sig>
 {
     t.proto_name(b"Schnorr-sig");
     t.commit_point(b"sign:pk",public.as_compressed());
 
-    let R = R_point.as_compressed();
-    t.commit_point(b"sign:R",&R);
+    let r_compress = r_point.as_compressed();
+    t.commit_point(b"sign:r_compress",&r_compress);
 
     let e = t.challenge_scalar(b"sign:c");  // context, message, A/public_key, R=rG
 
@@ -365,7 +365,7 @@ pub fn inner_raw_sign<T: SigningTranscript>(secret: SecretKey, mut t: T, R_point
 
     let s = &(&n1 * &n2) + &n3;
 
-    let sbb = concat_u8(&R.as_bytes()[..], &s.as_bytes()[..]);
+    let sbb = concat_u8(&r_compress.as_bytes()[..], &s.as_bytes()[..]);
     let sb = sbb.as_slice();
     let sig_byte_arrays = [sb[0], sb[1], sb[2], sb[3], sb[4], sb[5], sb[6], sb[7], sb[8], sb[9],
                            sb[10], sb[11], sb[12], sb[13], sb[14], sb[15], sb[16], sb[17], sb[18], sb[19],
