@@ -636,7 +636,7 @@ impl<'a> FromPyObject<'a> for ExtendedKeypair {
 
 /// This module is a python module implemented in Rust.
 #[pymodule]
-fn sr25519(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn sr25519_nbx(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(pair_from_seed))?;
     m.add_wrapped(wrap_pyfunction!(pair_from_ed25519_secret_key))?;
     m.add_wrapped(wrap_pyfunction!(sign))?;

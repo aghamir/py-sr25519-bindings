@@ -2,7 +2,7 @@
 name = "py-sr25519-bindings-fork"
 description = "Fork Python bindings for sr25519 library"
 authors=["openAware B.V."]
-version = "0.2.2"
+version = "0.2.3"
 repository = "https://github.com/aghamir/py-sr25519-bindings"
 homepage = "https://github.com/aghamir/py-sr25519-bindings"
 license = "Apache-2.0"
@@ -21,7 +21,7 @@ version = "4.0"
 hex-literal = "0.3.4"
 
 [lib]
-name = "sr25519"
+name = "sr25519_nbx"
 crate-type = ["cdylib"]
 
 [dependencies.pyo3]
