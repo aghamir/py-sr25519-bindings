@@ -77,7 +77,7 @@ fn _to_pytuple(any: &PyAny) -> PyResult<&PyTuple> {
 ///
 /// * `ValueError` - If either the public or private key is invalid.
 #[pyfunction]
-#[text_signature = "(keypair, message)"]
+#[pyo3(text_signature = "(keypair, message)")]
 pub fn sign(keypair: Keypair, message: Message) -> PyResult<Sig> {
     let mut public = [0u8; PUBLIC_KEY_LENGTH];
     let mut private = [0u8; SECRET_KEY_LENGTH];
@@ -115,7 +115,7 @@ pub fn sign(keypair: Keypair, message: Message) -> PyResult<Sig> {
 ///
 /// * `ValueError` - If either the signature or public key are structurally invalid.
 #[pyfunction]
-#[text_signature = "(signature, message, pubkey)"]
+#[pyo3(text_signature = "(signature, message, pubkey)")]
 pub fn verify(signature: Sig, message: Message, pubkey: PubKey) -> PyResult<bool> {
     let sig = match Signature::from_bytes(&signature.0) {
         Ok(some_sig) => some_sig,
@@ -139,7 +139,7 @@ pub fn verify(signature: Sig, message: Message, pubkey: PubKey) -> PyResult<bool
 ///
 /// A tuple containing the 32-byte public key and 64-byte secret key, in that order.
 #[pyfunction]
-#[text_signature = "(seed)"]
+#[pyo3(text_signature = "(seed)")]
 pub fn pair_from_seed(seed: Seed) -> PyResult<Keypair> {
     let k = MiniSecretKey::from_bytes(&seed.0).expect("32 bytes can always build a key; qed");
     let kp = k.expand_to_keypair(ExpansionMode::Ed25519);
@@ -161,7 +161,7 @@ pub fn pair_from_seed(seed: Seed) -> PyResult<Keypair> {
 ///
 /// * `ValueError` - If the provided secret key is invalid.
 #[pyfunction]
-#[text_signature = "(secret_key)"]
+#[pyo3(text_signature = "(secret_key)")]
 pub fn public_from_secret_key(secret_key: PrivKey) -> PyResult<PubKey> {
     let sec_key = match SecretKey::from_bytes(&secret_key.0) {
         Ok(some_key) => some_key,
@@ -184,7 +184,7 @@ pub fn public_from_secret_key(secret_key: PrivKey) -> PyResult<PubKey> {
 ///
 /// A new extended public key for the child.
 #[pyfunction]
-#[text_signature = "(extended_pubkey, id)"]
+#[pyo3(text_signature = "(extended_pubkey, id)")]
 pub fn derive_pubkey(extended_pubkey: ExtendedPubKey, id: Message) -> PyResult<ExtendedPubKey> {
     let chain_code = ChainCode(extended_pubkey.0);
     let pubkey = PublicKey::from_bytes(&extended_pubkey.1)
@@ -209,7 +209,7 @@ pub fn derive_pubkey(extended_pubkey: ExtendedPubKey, id: Message) -> PyResult<E
 /// deterministically, but the secret key nonce is *RANDOM*, even with
 /// identical input.
 #[pyfunction]
-#[text_signature = "(extended_keypair, id)"]
+#[pyo3(text_signature = "(extended_keypair, id)")]
 pub fn derive_keypair(extended_keypair: ExtendedKeypair, id: Message) -> PyResult<ExtendedKeypair> {
     let chain_code = ChainCode(extended_keypair.0);
     let pubkey = PublicKey::from_bytes(&extended_keypair.1)
@@ -241,7 +241,7 @@ pub fn derive_keypair(extended_keypair: ExtendedKeypair, id: Message) -> PyResul
 /// deterministically, but the secret key nonce is *RANDOM*, even with
 /// identical input.
 #[pyfunction]
-#[text_signature = "(extended_keypair, id)"]
+#[pyo3(text_signature = "(extended_keypair, id)")]
 pub fn hard_derive_keypair(extended_keypair: ExtendedKeypair, id: Message) -> PyResult<ExtendedKeypair> {
     let chain_code = ChainCode(extended_keypair.0);
     let privkey = SecretKey::from_bytes(&extended_keypair.2)
