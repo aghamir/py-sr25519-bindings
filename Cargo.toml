@@ -2,7 +2,7 @@
 name = "py-sr25519-bindings-fork"
 description = "Fork Python bindings for sr25519 library"
 authors=["openAware B.V."]
-version = "0.2.1-postfix1"
+version = "0.2.2"
 repository = "https://github.com/aghamir/py-sr25519-bindings"
 homepage = "https://github.com/aghamir/py-sr25519-bindings"
 license = "Apache-2.0"
