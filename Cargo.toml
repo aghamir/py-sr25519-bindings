@@ -1,10 +1,10 @@
 [package]
-name = "py-sr25519-bindings"
+name = "py-sr25519-bindings-fork"
 description = "Fork Python bindings for sr25519 library"
-authors=["Polkascan Foundation"]
-version = "0.2.0"
-repository = "https://github.com/polkascan/py-sr25519-bindings"
-homepage = "https://github.com/polkascan/py-sr25519-bindings"
+authors=["openAware B.V."]
+version = "0.2.1"
+repository = "https://github.com/aghamir/py-sr25519-bindings"
+homepage = "https://github.com/aghamir/py-sr25519-bindings"
 license = "Apache-2.0"
 readme = "README.md"
 edition = "2018"
