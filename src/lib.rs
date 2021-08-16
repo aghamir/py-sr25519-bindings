@@ -51,13 +51,13 @@ fn _check_pybytes_len(bytes: &PyBytes, length: usize) -> PyResult<&PyBytes> {
         |actual_len| if actual_len == length {
             Ok(bytes)
         } else {
-            Err(exceptions::ValueError::py_err(format!("Expected bytes of length {}, got {}", length, actual_len)))
+            Err(exceptions::PyValueError::new_err(format!("Expected bytes of length {}, got {}", length, actual_len)))
         })
 }
 
 fn _to_pytuple(any: &PyAny) -> PyResult<&PyTuple> {
     any.downcast::<PyTuple>()
-        .map_err(|_| exceptions::TypeError::py_err("Expected tuple"))
+        .map_err(|_| exceptions::PyTypeError::new_err("Expected tuple"))
 }
 
 // Main interface
@@ -85,12 +85,12 @@ pub fn sign(keypair: Keypair, message: Message) -> PyResult<Sig> {
     private.clone_from_slice(&keypair.1[0..SECRET_KEY_LENGTH]);
     let secret = match SecretKey::from_bytes(&private) {
         Ok(some_secret) => some_secret,
-        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid secret key: {}", err.to_string()))),
+        Err(err) => return Err(exceptions::PyValueError::new_err(format!("Invalid secret key: {}", err.to_string()))),
     };
 
     let public = match PublicKey::from_bytes(&public) {
         Ok(some_public) => some_public,
-        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid public key: {}", err.to_string()))),
+        Err(err) => return Err(exceptions::PyValueError::new_err(format!("Invalid public key: {}", err.to_string()))),
     };
 
     let context = signing_context(SIGNING_CTX);
@@ -119,11 +119,11 @@ pub fn sign(keypair: Keypair, message: Message) -> PyResult<Sig> {
 pub fn verify(signature: Sig, message: Message, pubkey: PubKey) -> PyResult<bool> {
     let sig = match Signature::from_bytes(&signature.0) {
         Ok(some_sig) => some_sig,
-        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid signature: {}", err.to_string()))),
+        Err(err) => return Err(exceptions::PyValueError::new_err(format!("Invalid signature: {}", err.to_string()))),
     };
     let pk = match PublicKey::from_bytes(&pubkey.0) {
         Ok(some_pk) => some_pk,
-        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid public key: {}", err.to_string()))),
+        Err(err) => return Err(exceptions::PyValueError::new_err(format!("Invalid public key: {}", err.to_string()))),
     };
     let result = pk.verify_simple(SIGNING_CTX, &message.0, &sig);
     Ok(result.is_ok())
@@ -165,7 +165,7 @@ pub fn pair_from_seed(seed: Seed) -> PyResult<Keypair> {
 pub fn public_from_secret_key(secret_key: PrivKey) -> PyResult<PubKey> {
     let sec_key = match SecretKey::from_bytes(&secret_key.0) {
         Ok(some_key) => some_key,
-        Err(err) => return Err(exceptions::ValueError::py_err(format!("Invalid secret key: {}", err.to_string()))),
+        Err(err) => return Err(exceptions::PyValueError::new_err(format!("Invalid secret key: {}", err.to_string()))),
     };
     let pub_key = sec_key.to_public();
 
@@ -188,7 +188,7 @@ pub fn public_from_secret_key(secret_key: PrivKey) -> PyResult<PubKey> {
 pub fn derive_pubkey(extended_pubkey: ExtendedPubKey, id: Message) -> PyResult<ExtendedPubKey> {
     let chain_code = ChainCode(extended_pubkey.0);
     let pubkey = PublicKey::from_bytes(&extended_pubkey.1)
-        .map_err(|err| exceptions::ValueError::py_err(format!("Invalid public key: {}", err.to_string())))?;
+        .map_err(|err| exceptions::PyValueError::new_err(format!("Invalid public key: {}", err.to_string())))?;
     let (new_pubkey, new_chaincode) = pubkey.derived_key_simple(chain_code, &id.0);
 
     Ok(ExtendedPubKey(new_chaincode.0, new_pubkey.to_bytes()))
@@ -213,9 +213,9 @@ pub fn derive_pubkey(extended_pubkey: ExtendedPubKey, id: Message) -> PyResult<E
 pub fn derive_keypair(extended_keypair: ExtendedKeypair, id: Message) -> PyResult<ExtendedKeypair> {
     let chain_code = ChainCode(extended_keypair.0);
     let pubkey = PublicKey::from_bytes(&extended_keypair.1)
-        .map_err(|err| exceptions::ValueError::py_err(format!("Invalid public key: {}", err.to_string())))?;
+        .map_err(|err| exceptions::PyValueError::new_err(format!("Invalid public key: {}", err.to_string())))?;
     let privkey = SecretKey::from_bytes(&extended_keypair.2)
-        .map_err(|err| exceptions::ValueError::py_err(format!("Invalid secret key: {}", err.to_string())))?;
+        .map_err(|err| exceptions::PyValueError::new_err(format!("Invalid secret key: {}", err.to_string())))?;
     let keypair = SchnorrkelKeypair{secret: privkey, public: pubkey};
     let (new_keypair, new_chaincode) = keypair.derived_key_simple(chain_code, &id.0);
 
@@ -245,7 +245,7 @@ pub fn derive_keypair(extended_keypair: ExtendedKeypair, id: Message) -> PyResul
 pub fn hard_derive_keypair(extended_keypair: ExtendedKeypair, id: Message) -> PyResult<ExtendedKeypair> {
     let chain_code = ChainCode(extended_keypair.0);
     let privkey = SecretKey::from_bytes(&extended_keypair.2)
-        .map_err(|err| exceptions::ValueError::py_err(format!("Invalid secret key: {}", err.to_string())))?;
+        .map_err(|err| exceptions::PyValueError::new_err(format!("Invalid secret key: {}", err.to_string())))?;
 
     let (new_mini, new_chaincode) = privkey.hard_derive_mini_secret_key(Some(chain_code), &id.0);
     let new_keypair = new_mini.expand_to_keypair(ExpansionMode::Ed25519);
@@ -267,9 +267,9 @@ impl<'a> FromPyObject<'a> for Keypair {
     fn extract(obj: &'a PyAny) -> PyResult<Self> {
         let keypair = obj
             .downcast::<PyTuple>()
-            .map_err(|_| exceptions::TypeError::py_err("Invalid Keypair: expected a tuple"))?;
+            .map_err(|_| exceptions::PyTypeError::new_err("Invalid Keypair: expected a tuple"))?;
         if keypair.len() < 2 {
-            return Err(exceptions::IndexError::py_err(format!("Expected tuple of size 2, got {}", keypair.len())));
+            return Err(exceptions::PyIndexError::new_err(format!("Expected tuple of size 2, got {}", keypair.len())));
         }
 
         // Convert bytes to fixed width arrays
@@ -278,13 +278,13 @@ impl<'a> FromPyObject<'a> for Keypair {
         public.clone_from_slice(
             &keypair.get_item(0)
                     .downcast::<PyBytes>()
-                    .map_err(|_| exceptions::TypeError::py_err("Invalid PubKey: expected a python Bytes object"))
+                    .map_err(|_| exceptions::PyTypeError::new_err("Invalid PubKey: expected a python Bytes object"))
                     .and_then(|b| _check_pybytes_len(b, PUBLIC_KEY_LENGTH))?
                     .as_bytes()[0..PUBLIC_KEY_LENGTH]);
         private.clone_from_slice(
             &keypair.get_item(1)
                     .downcast::<PyBytes>()
-                    .map_err(|_| exceptions::TypeError::py_err("Invalid SecretKey: Expected a python Bytes object"))
+                    .map_err(|_| exceptions::PyTypeError::new_err("Invalid SecretKey: Expected a python Bytes object"))
                     .and_then(|b| _check_pybytes_len(b, SECRET_KEY_LENGTH))?
                     .as_bytes()[0..SECRET_KEY_LENGTH]);
         let keypair = Keypair(public, private);
@@ -305,7 +305,7 @@ impl<'a> FromPyObject<'a> for Sig {
     fn extract(obj: &'a PyAny) -> PyResult<Self> {
         let signature = obj
             .downcast::<PyBytes>()
-            .map_err(|_| exceptions::TypeError::py_err(format!("Expected {} byte signature", SIGNATURE_LENGTH)))
+            .map_err(|_| exceptions::PyTypeError::new_err(format!("Expected {} byte signature", SIGNATURE_LENGTH)))
             .and_then(|b| _check_pybytes_len(b, SIGNATURE_LENGTH))?;
 
         // Convert bytes to fixed width array
@@ -320,10 +320,10 @@ impl<'a> FromPyObject<'a> for Seed {
     fn extract(obj: &'a PyAny) -> PyResult<Self> {
         let seed = obj
             .downcast::<PyBytes>()
-            .map_err(|_| PyErr::new::<exceptions::TypeError, _>("Expected a bytestring"))?;
+            .map_err(|_| PyErr::new::<exceptions::PyTypeError, _>("Expected a bytestring"))?;
 
         if seed.as_bytes().len() != MINI_SECRET_KEY_LENGTH {
-            return Err(PyErr::new::<exceptions::IndexError, _>(
+            return Err(PyErr::new::<exceptions::PyIndexError, _>(
                 format!("Expected seed with length: {}", MINI_SECRET_KEY_LENGTH),
             ));
         }
@@ -348,7 +348,7 @@ impl<'a> FromPyObject<'a> for PubKey {
     fn extract(obj: &'a PyAny) -> PyResult<Self> {
         let pubkey = obj
             .downcast::<PyBytes>()
-            .map_err(|_| exceptions::TypeError::py_err("Invalid PubKey, expected bytes object"))
+            .map_err(|_| exceptions::PyTypeError::new_err("Invalid PubKey, expected bytes object"))
             .and_then(|b| _check_pybytes_len(b, PUBLIC_KEY_LENGTH))?;
 
         // Convert bytes to fixed width array
@@ -371,7 +371,7 @@ impl<'a> FromPyObject<'a> for PrivKey {
     fn extract(obj: &'a PyAny) -> PyResult<Self> {
         let secret = obj
             .downcast::<PyBytes>()
-            .map_err(|_| exceptions::TypeError::py_err(format!("Expected {} byte secret key", SECRET_KEY_LENGTH)))
+            .map_err(|_| exceptions::PyTypeError::new_err(format!("Expected {} byte secret key", SECRET_KEY_LENGTH)))
             .and_then(|b| _check_pybytes_len(b, SECRET_KEY_LENGTH))?;
 
         // Convert bytes to fixed width array
@@ -386,7 +386,7 @@ impl<'a> FromPyObject<'a> for Message {
     fn extract(obj: &PyAny) -> PyResult<Self> {
         let messsge = obj
             .downcast::<PyBytes>()
-            .map_err(|_| exceptions::TypeError::py_err("Expected bytes object"))?;
+            .map_err(|_| exceptions::PyTypeError::new_err("Expected bytes object"))?;
         Ok(Message(messsge.as_bytes().to_owned()))
     }
 }
@@ -408,7 +408,7 @@ impl<'a> FromPyObject<'a> for ExtendedPubKey {
         // Don't check that the length matches exactly here so that an extended
         // private key can be passed in as well.
         if extended.len() < 2 {
-            return Err(exceptions::IndexError::py_err(format!("Expected tuple of size 2, got {}", extended.len())));
+            return Err(exceptions::PyIndexError::new_err(format!("Expected tuple of size 2, got {}", extended.len())));
         }
 
         // Convert bytes to fixed width arrays
@@ -417,13 +417,13 @@ impl<'a> FromPyObject<'a> for ExtendedPubKey {
         chain_code.clone_from_slice(
             &extended.get_item(0)
                     .downcast::<PyBytes>()
-                    .map_err(|_| exceptions::TypeError::py_err("Expected bytes object at index 0"))
+                    .map_err(|_| exceptions::PyTypeError::new_err("Expected bytes object at index 0"))
                     .and_then(|b| _check_pybytes_len(b, CHAIN_CODE_LENGTH))?
                     .as_bytes()[0..CHAIN_CODE_LENGTH]);
         public.clone_from_slice(
             &extended.get_item(1)
                     .downcast::<PyBytes>()
-                    .map_err(|_| exceptions::TypeError::py_err("Expected bytes object at index 1"))
+                    .map_err(|_| exceptions::PyTypeError::new_err("Expected bytes object at index 1"))
                     .and_then(|b| _check_pybytes_len(b, PUBLIC_KEY_LENGTH))?
                     .as_bytes()[0..PUBLIC_KEY_LENGTH]);
         let extended_pubkey = ExtendedPubKey(chain_code, public);
@@ -447,7 +447,7 @@ impl<'a> FromPyObject<'a> for ExtendedKeypair {
     fn extract(obj: &'a PyAny) -> PyResult<Self> {
         let extended = _to_pytuple(obj)?;
         if extended.len() < 3 {
-            return Err(exceptions::IndexError::py_err(format!("Expected tuple of size 3, got {}", extended.len())));
+            return Err(exceptions::PyIndexError::new_err(format!("Expected tuple of size 3, got {}", extended.len())));
         }
 
         // Convert bytes to fixed width arrays
@@ -458,19 +458,19 @@ impl<'a> FromPyObject<'a> for ExtendedKeypair {
         chain_code.clone_from_slice(
             &extended.get_item(0)
                     .downcast::<PyBytes>()
-                    .map_err(|_| exceptions::TypeError::py_err("Expected bytes object at index 0"))
+                    .map_err(|_| exceptions::PyTypeError::new_err("Expected bytes object at index 0"))
                     .and_then(|b| _check_pybytes_len(b, CHAIN_CODE_LENGTH))?
                     .as_bytes()[0..CHAIN_CODE_LENGTH]);
         public.clone_from_slice(
             &extended.get_item(1)
                     .downcast::<PyBytes>()
-                    .map_err(|_| exceptions::TypeError::py_err("Expected bytes object at index 1"))
+                    .map_err(|_| exceptions::PyTypeError::new_err("Expected bytes object at index 1"))
                     .and_then(|b| _check_pybytes_len(b, PUBLIC_KEY_LENGTH))?
                     .as_bytes()[0..PUBLIC_KEY_LENGTH]);
         private.clone_from_slice(
            &extended.get_item(2)
                     .downcast::<PyBytes>()
-                    .map_err(|_| exceptions::TypeError::py_err("Expected bytes object at index 2"))
+                    .map_err(|_| exceptions::PyTypeError::new_err("Expected bytes object at index 2"))
                     .and_then(|b| _check_pybytes_len(b, SECRET_KEY_LENGTH))?
                     .as_bytes()[0..SECRET_KEY_LENGTH]);
         let extended_keypair = ExtendedKeypair(chain_code, public, private);
