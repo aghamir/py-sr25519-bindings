@@ -1,16 +1,16 @@
 [package]
-name = "py-sr25519-bindings"
-description = "Python bindings for  full sr25519 library"
+name = "py-sr25519-bindings-fork"
+description = "Fork Python bindings for sr25519 library"
 authors=["openAware B.V."]
-version = "0.2.0"
-repository = "https://github.com/hasanizadeh"
-homepage = "https://github.com/hasanizadeh"
+version = "0.2.1"
+repository = "https://github.com/aghamir/py-sr25519-bindings"
+homepage = "https://github.com/aghamir/py-sr25519-bindings"
 license = "Apache-2.0"
 readme = "README.md"
 edition = "2018"
 
 [dependencies]
-schnorrkel = "0.9.1"
+schnorrkel = "0.10.1"
 
 [dependencies.curve25519-dalek]
 package = "curve25519-dalek-ng"
@@ -18,7 +18,7 @@ package = "curve25519-dalek-ng"
 version = "4.0"
 
 [dev-dependencies]
-hex-literal = "0.2"
+hex-literal = "0.3.3"
 
 [lib]
 name = "sr25519"
@@ -31,11 +31,11 @@ extension-module = ["pyo3/extension-module"]
 default = ["extension-module"]
 
 [dependencies.pyo3]
-version = "0.10.1"
+version = "0.14.2"
 
 [package.metadata.maturin]
-maintainer = "Nobitex"
-maintainer-email = "p.hasanizadeh@nobitex.net"
+maintainer = "Mohammad Aghamir"
+maintainer-email = ""
 classifier = [
     "License :: OSI Approved :: Apache Software License",
     "Intended Audience :: Developers",
