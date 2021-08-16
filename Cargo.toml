@@ -1,6 +1,6 @@
 [package]
 name = "py-sr25519-bindings"
-description = "Python bindings for schnorrkel RUST crate"
+description = "Fork Python bindings for sr25519 library"
 authors=["Polkascan Foundation"]
 version = "0.2.0"
 repository = "https://github.com/polkascan/py-sr25519-bindings"
