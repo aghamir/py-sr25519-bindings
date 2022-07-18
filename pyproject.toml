@@ -3,18 +3,17 @@ requires = ["maturin>=0.14,<0.15"]
 build-backend = "maturin"
 
 [project]
-name = "py-sr25519-bindings"
-version = "0.2.0"
-description = "Python bindings for schnorrkel RUST crate"
+name = "py-sr25519-bindings-fork"
+version = "0.2.4"
+description = "Fork Python bindings for sr25519 library"
 readme = "README.md"
 requires-python = ">=3.7"
 license = {file = "LICENSE"}
 authors = [
-  {email = "info@polkascan.org"},
-  {name = "Polkascan Foundation"}
+  {name = "Mohammad Aghamir"}
 ]
 maintainers = [
-  {name = "Polkascan Foundation", email = "info@polkascan.org"}
+  {name = "Nobitex"}
 ]
 classifiers = [
     "License :: OSI Approved :: Apache Software License",
@@ -28,5 +27,5 @@ classifiers = [
 ]
 
 [project.urls]
-repository = "https://github.com/polkascan/py-sr25519-bindings"
-homepage = "https://github.com/polkascan/py-sr25519-bindings"
+repository = "https://github.com/aghamir/py-sr25519-bindings"
+homepage = "https://github.com/aghamir/py-sr25519-bindings"
