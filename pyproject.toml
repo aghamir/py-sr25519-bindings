@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "py-sr25519-bindings-fork"
-version = "0.2.4"
+version = "0.2.5"
 description = "Fork Python bindings for sr25519 library"
 readme = "README.md"
 requires-python = ">=3.7"
